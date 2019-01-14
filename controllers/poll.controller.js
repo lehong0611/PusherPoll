@@ -1,4 +1,5 @@
 var Pusher = require('pusher');
+const Vote = require('../modules/vote');
 
 var pusher = new Pusher({
     appId: '690139',
@@ -10,15 +11,23 @@ var pusher = new Pusher({
 
 module.exports = {
     getVote: (req, res) => {
-        res.send('POLL');
+        Vote.find().then(votes => {
+            res.json({success: true, votes: votes});
+        });
     },
 
     postVote: (req, res) => {
-        pusher.trigger('nodejs-poll', 'nodejs-vote', {
-            points: 1,
-            nodejs: req.body.nodejs
+        const newVote = {
+            nodejs: req.body.nodejs,
+            points: 1
+        }
+        new Vote(newVote).save().then(vote => {
+            pusher.trigger('nodejs-poll', 'nodejs-vote', {
+                points: parseInt(vote.points),
+                nodejs: vote.nodejs
+            });
+    
+            return res.json({success: true, message: 'Thank you for voting'});
         });
-
-        return res.json({success: true, message: 'Thank you for voting'});
     }
 };
